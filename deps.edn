@@ -1,0 +1,6 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure       {:mvn/version "1.10.0-alpha4"}
+        org.clojure/clojurescript {:mvn/version "1.10.238"}
+        re-frame                  {:mvn/version "0.10.5"}
+        route-map                 {:mvn/version "0.0.7-RC1"}
+        reagent                   {:mvn/version "0.7.0"}}}

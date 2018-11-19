@@ -1,7 +1,6 @@
 (ns zframes.xhr
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [clojure.string :as str]
-            [cognitect.transit :as transit]
             [re-frame.core :as rf]))
 
 (defn sub-query-by-spaces
