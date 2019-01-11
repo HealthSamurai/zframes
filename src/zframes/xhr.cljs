@@ -32,16 +32,22 @@
     form-data))
 
 (defn *json-fetch [{:keys [uri token headers is-fetching-path params success error]
-                   :as opts}]
+                    :as opts}]
   (let [headers (cond-> {"accept" "application/json"
                          "authorization" (str "Bearer " token)}
-                  (nil? (:files opts)) (assoc "Content-Type" "application/json")
-                  true (merge (or headers {})))
+                  (and (nil? (:files opts)) (not (:form-data? opts)))
+                  (assoc "Content-Type" "application/json")
+
+                  true
+                  (merge (or headers {})))
         fetch-opts (-> (merge {:method "get" :mode "cors"} opts)
-                       (dissoc :uri :headers :success :error :params :files)
+                       (dissoc :uri :headers :success :error :params :files :form-data?)
                        (assoc :headers headers))
         fetch-opts (cond-> fetch-opts
-                     (:body opts) (assoc :body (if (string? (:body opts)) (:body opts) (.stringify js/JSON (clj->js (:body opts)))))
+                     (:body opts) (assoc :body (if (or (string? (:body opts))
+                                                       (:form-data? opts))
+                                                 (:body opts)
+                                                 (.stringify js/JSON (clj->js (:body opts)))))
                      (:files opts) (assoc :body (make-form-data (:files opts))))
         ;; FIXME: do not do this; do not go to db from subsciprion
         url (if (str/starts-with? uri "http")
