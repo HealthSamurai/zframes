@@ -120,19 +120,22 @@
                                  true (conj [current-page :init params])))
 
              old-contexts (:route/context db)
-             context-evs (contexts-diff (:match route) old-contexts contexts params old-params)]
+             context-evs (contexts-diff (:match route) old-contexts contexts params old-params)
+             history (conj (take 4 (:route/history db)) {:route (:match route) :uri fragment})]
          {:db (assoc db
-                     :route/history (conj (take 4 (:route/history db)) {:route (:match route) :uri fragment})
-                     :fragment fragment
-                     :fragment-params params
-                     :fragment-path path
-                     :fragment-query-string qs
-                     :route/context contexts
+                     :route/history           history
+                     :fragment                fragment
+                     :fragment-params         params
+                     :fragment-path           path
+                     :fragment-query-string   qs
+                     :route/context           contexts
+                     :route-map/error         nil
                      :route-map/current-route route)
           :dispatch-n (into context-evs page-ctx-events)})
        {:db (assoc db
-                   :fragment fragment :route-map/current-route nil
-                   :route-map/error :not-found)}))))
+                   :fragment                fragment
+                   :route-map/current-route nil
+                   :route-map/error         :not-found)}))))
 
 (rf/reg-sub
  :pop-route
