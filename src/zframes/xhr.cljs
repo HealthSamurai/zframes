@@ -31,6 +31,11 @@
        (.append form-data (str "file" i) file (str "file" i))))
     form-data))
 
+(defn json? [response]
+  (let [content-type (.get (.-headers response) "content-type")]
+    (and (not (str/blank? content-type))
+             (str/starts-with? content-type "application/json"))))
+
 (defn *json-fetch [{:keys [uri token headers is-fetching-path params success error]
                     :as opts}]
   (let [headers (cond-> {"accept" "application/json"
@@ -59,31 +64,36 @@
      (.then
       (fn [resp]
         (when is-fetching-path (rf/dispatch [::fetch-end is-fetching-path]))
-        (.then (.json resp)
-               ;; There is a json
-               (fn [doc]
-                 (if (< (.-status resp) 299)
-                   (rf/dispatch [(:event success)
-                                 (merge success
-                                        {:request opts
-                                         :response resp
-                                         :original-data (.stringify js/JSON doc)
-                                         :data (js->clj doc :keywordize-keys true)})])
-                   (rf/dispatch [(:event error)
-                                 (merge error
-                                        {:request opts
-                                         :response resp
-                                         :data (js->clj doc :keywordize-keys true)})])))
-               ;; No json
-               (fn [doc]
-                 (println "Error:" doc)
-                 (rf/dispatch
-                  [(:event success)
-                   (merge success
-                          {:request opts
-                           :response resp
-                           :data doc})]))
-               )))
+        (if (json? resp)
+          (.then (.json resp)
+                 ;; There is a json
+                 (fn [doc]
+                   (if (< (.-status resp) 299)
+                     (rf/dispatch [(:event success)
+                                   (merge success
+                                          {:request opts
+                                           :response resp
+                                           :original-data (.stringify js/JSON doc)
+                                           :data (js->clj doc :keywordize-keys true)})])
+                     (rf/dispatch [(:event error)
+                                   (merge error
+                                          {:request opts
+                                           :response resp
+                                           :data (js->clj doc :keywordize-keys true)})])))
+                 ;; No json
+                 (fn [doc]
+                   (println "Error:" doc)
+                   (rf/dispatch
+                    [(:event success)
+                     (merge success
+                            {:request opts
+                             :response resp
+                             :data doc})]))
+                 )
+          (rf/dispatch [(:event success)
+                        (merge success
+                               {:request opts
+                                :response resp})]))))
      (.catch (fn [err]
                (.error js/console err)
                (rf/dispatch [(:event error)
